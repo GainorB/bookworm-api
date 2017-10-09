@@ -1,7 +1,7 @@
 const express = require('express');
 const User = require('../models/User');
 const parseErrors = require('../utils/parseErrors');
-const sendConfirmationEmail = require('../mailer');
+const { sendConfirmationEmail } = require('../mailer');
 
 const router = express.Router();
 
@@ -13,6 +13,7 @@ router.post('/', (req, res) => {
   user
     .save()
     .then(user => {
+      // console.log(user);
       sendConfirmationEmail(user);
       res.json({ user: user.toAuthJSON() });
     })
