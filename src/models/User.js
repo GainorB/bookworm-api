@@ -1,11 +1,13 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
+const uniqueValidator = require('mongoose-unique-validator');
 
 const schema = new mongoose.Schema(
   {
-    email: { type: String, required: true, lowercase: true, index: true },
-    passwordHash: { type: String, required: true }
+    email: { type: String, required: true, lowercase: true, index: true, unique: true },
+    passwordHash: { type: String, required: true },
+    confirmed: { type: Boolean, default: false }
   },
   { timestamps: true } // ADDS CREATED AT AND UPDATED AT
 );
@@ -15,6 +17,10 @@ const schema = new mongoose.Schema(
 // VALIDATES PASSWORD
 schema.methods.isValidPassword = function isValidPassword(password) {
   return bcrypt.compareSync(password, this.passwordHash);
+};
+
+schema.methods.setPassword = function setPassword(password) {
+  this.passwordHash = bcrypt.hashSync(password, 10);
 };
 
 schema.methods.generateJWT = function generateJWT() {
@@ -30,8 +36,11 @@ schema.methods.generateJWT = function generateJWT() {
 schema.methods.toAuthJSON = function toAuthJSON() {
   return {
     email: this.email,
-    token: this.generateJWT()
+    token: this.generateJWT(),
+    confirmed: this.confirmed
   };
 };
 
-export default mongoose.model('User', schema);
+schema.plugin(uniqueValidator, { message: 'This email is already taken' });
+
+module.exports = mongoose.model('User', schema);
